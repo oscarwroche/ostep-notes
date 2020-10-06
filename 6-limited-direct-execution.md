@@ -40,6 +40,6 @@ Non-cooperative approach : **timer interrupt** every X milliseconds. OS regains 
 
 This decision is made using the **scheduler** (see next chapter). Switching between processes is made using a low-level **context switch**. The OS saves the register values of the currently-executing process and restores some from the process that is about to be executed.
 
-## How about concurrency ?
+## What about concurrency ?
 
 See **locking schemes**
