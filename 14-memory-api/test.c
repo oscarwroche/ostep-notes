@@ -3,6 +3,8 @@
 
 int main() {
 	int *x = malloc(10 * sizeof(int));
-	printf("%d\n", sizeof(x));
+	printf("%lu\n", sizeof(x));
+	int y[10]; 
+	printf("%lu\n", sizeof(y));
 	return 0;
 }
