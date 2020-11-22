@@ -1,0 +1,49 @@
+How to avoid spinning when waiting for thread ?
+
+* Condition variables + API
+
+Type: /pthread_cond_t/
+API: /wait()/ for thread to put itself to sleep and /signal()/ for thread
+to signal to threads waiting conditionally on the signal.
+
+#+BEGIN_SRC c
+pthread_cond_wait(pthread_cond_t *c, pthread_mutex_t *m);
+pthread_cond_signal(pthread_cond_t *c);
+#+END_SRC
+
+/wait/ assumes that the mutex is locked and puts calling thread to sleep.
+It's necessary so that the /done/ variable doesn't change before calling
+/wait/ - *always hold lock when signalling*
+
+* The Producer / Consumer problem
+
+AKA *bounded buffer problem*
+
+Producers generate data items and put them in a buffer.
+Consumers grab them from buffer.
+
+Examples: *UNIX pipe* - in /grep foo file.txt | wc -l/ grep is the
+producer, wc the consumer and the pipe is the bounded buffer.
+
+*First solution* - put lock around put and get. But there can still be 
+race conditions between consumers (or producers).
+
+Meaning of a signal - *Mesa semantics*
+
+*Second solution* - add *while* instead of *if* because it re-checks condition
+(think about how while is written in assembly)
+
+Still doesn't work if two threads go to sleep before producer wakes up.
+After, first consumer consumes and with its signal awakes second one :
+everybody sleeps -> signaling must be *directed* too
+
+*Third solution* - use *two condition variables*, /fill/ and /empty/
+
+*Full solution* that includes a buffer of size > 1
+
+
+* Covering conditions
+
+Example of the [[https://people.eecs.berkeley.edu/~brewer/cs262/Mesa.pdf][Pilot OS]]
+
+This replaces *signaling* with *which* will wake up all waiting threads

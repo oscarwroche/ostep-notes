@@ -1,0 +1,51 @@
+* Concurrency
+
+Thread is similar to a process, with the difference that two
+threads in the same process share the same address space.
+
+** Why use them
+
+This is especially useful, for example so that a process can
+do other things while waiting for I/O, or to parallelize algorithms
+over several processors. Threads can thus share the data they all
+need, without the overhead of context switching.
+
+** Example : thread creation
+
+Program with two threads. No guarantee wrt order in which they're
+run - this is determined by the scheduler.
+
+** The issue : shared data
+
+Program with two threads updating same counter : result
+is undepredictable.
+
+#+BEGIN_SRC asm
+mov 0x8049a1c, %eax
+add $0x1, %eax
+mov %eax, 0x8049a1c
+#+END_SRC
+
+The crux is that %eax is private, but the counter at 0x8049a1c
+(VM address).
+
+This is a *race condition* because the result depends on which
+one of the threads runs first - *indeterminate* behavior.
+
+The solution for this is called *mutual exclusion*
+
+** Atomicity
+
+The goal is to guarantee that a set of instruction goes through
+iff every one of them went through one after the other, uninterrupted.
+
+This is not desirable for large instructions - this is why the 
+hardware will provide *synchronization primitives* only for some
+critical sections.
+
+** Awaiting threads
+
+What happens when threads must wait for one another ?
+Use **condition variables**
+
+

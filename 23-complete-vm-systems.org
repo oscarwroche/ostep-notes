@@ -1,0 +1,70 @@
+** Linux
+
+*** Address space
+
+User space + kernel space split at 0xC0000000
+
+**** Two types of kernel addresses :
+
+1. Logical kernel addresses
+   + Used by calling _kmalloc_ 
+   + Connected to physical memory (mapped directly with an
+     offset of 0xC0000000 + preservation of contiguity)
+   + Good for I/O and direct memory access
+2. Virtual kernel addresses
+   + Used by calling _vmalloc_
+   + Not necessarily contiguous
+   + Allows OS to access more than 1 gb of memory
+
+*** Page table structure (x86)
+
+**** Multi-level page table managed by x86 - [[https://wiki.osdev.org/Paging][OS Dev Wiki - x86
+   Paging]]
+   64 bit - 4-level page table. Only 48 bits used (cause
+   total 64 bit address size would be 256 TiB) : 12 bit for offset
+   and 4 times 9 for page table offsets
+
+**** Multiple-size page table (from 4KB to as much as *1GB*)
+   1. Pros
+      + Less mappings in page tables
+      + Less TLB misses and less cost when having misses
+      + Initially used for selected implementations and then more generally
+   2. Cons
+      - Internal fragmentation
+      - Swapping uses a ton of I/O
+      - Allocation overhead
+
+*** Page cache
+
+1. Uses memory-mapped files and anonymous memory (???)
+   + *Memory mapping* : get virtual address of region
+     of VM where start of file descriptor is)
+2. 2Q replacement algorithm (2 active / inactive lists)
+   + Uses kind of clock replacement in inactive list
+
+*** Security and buffer overflows
+
+1. *Buffer overflow* : injecting data that is too long for buffer
+   + Defenses against it :
+     - *NX (No-Xecute) bit* - forbid execution of any page
+       with 1 as XD, for example in stack
+2. *Return-oriented programming* - overwriting stack to set 
+   return address to malicious program
+   See [[https://en.wikipedia.org/wiki/Return-to-libc_attack][Return-to-libc attack]]
+   + Defenses :
+     - *ASR (Address Space layout Randomization)*
+       Try doing the following :
+       #+begin_src
+       int main(int argc, char *argv[]) {
+	   int stack = 0;
+	   printf("%p\n", &stack);
+	   return 0;
+       }
+       #+end_src
+3. *Meltdown and Spectre*
+   + See [[meltdownattack.com][Meltdown]] and [[spectreattack.com][Spectre]]
+   + Exploit *speculative execution*
+   + Defenses :
+     - *KPTI* (Kernel Page Table Isolation)
+
+

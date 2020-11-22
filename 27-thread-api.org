@@ -1,0 +1,117 @@
+* What are the interfaces exposed by the OS for thread creation and control
+
+** Thread creation
+
+#+BEGIN+SRC c
+#include <pthread.h>
+int
+pthread_create(pthread_t *thread,
+const pthread_attr_t *attr,
+void *(*start__routine)(void*),
+void *arg);
+#+END_SRC
+
+Third argument: thread function
+
+** Thread completion
+
+Uses :
+#+BEGIN+SRC c
+int pthread_join(pthread_t thread, void **value_ptr);
+#+END_SRC
+
+The first argument is the one returned from thread creation, the second
+one is for return values -> it is very important to use this argument
+and not to allocate memory on the thread's call stack (which will be deleted
+at thread completion). Primitive type arguments don't have to be wrapped.
+
+** Thread locking
+#+BEGIN+SRC c
+pthread_mutex_t lock;
+pthread_mutex_lock(&lock);
+x = x + 1; // or whatever your critical section is
+pthread_mutex_unlock(&lock);
+#+END_SRC
+
+Used to isolate a critical section of the code - the thread will wait
+until the lock is not held to *acquire the lock*
+
+Locks must be initialized using:
+
+#+BEGIN+SRC c
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+#+END_SRC
+
+or
+
+#+BEGIN+SRC c
+int rc = pthread_mutex_init(&lock, NULL);
+assert(rc == 0); // always check success!
+#+END_SRC
+
+... and destroyed using /pthread_mutex_destroy()/
+
+** Condition variables
+
+Example:
+
+#+BEGIN+SRC c
+pthread_mutex_lock(&lock);
+while (ready == 0)
+pthread_cond_wait(&cond, &lock);
+pthread_mutex_unlock(&lock);
+#+END_SRC
+
+together with:
+
+#+BEGIN+SRC c
+pthread_mutex_lock(&lock);
+ready = 1;
+pthread_cond_signal(&cond);
+pthread_mutex_unlock(&lock);
+#+END_SRC
+
+** Summary
+
+Useful tips :
+
+• Keep it simple. Above all else, any code to lock or signal
+between threads should be as simple as possible. Tricky
+thread interactions lead to bugs. 
+
+• Minimize thread interactions. Try to keep the number of ways 
+in which threads interact to a minimum. Each interaction should
+be carefully thought out and constructed with tried and true
+approaches (many of which we will learn about in the coming
+chapters).
+
+• Initialize locks and condition
+variables. Failure to do so will lead to code that sometimes
+works and sometimes fails in very strange ways.
+
+• Check your return codes. Of course, in any C and UNIX programming
+you do, you should be checking each and every return code,
+and it’s true here as well. Failure to do so will lead to
+bizarre and hard to understand behavior, making you likely
+to (a) scream, (b) pull some of your hair out, or (c) both.
+
+• Be careful with how you pass arguments to, and return
+values from, threads. In particular, any time you are
+passing a reference to a variable allocated on the stack,
+you are probably doing something wrong.
+
+• Each thread has its own stack. As related to the point above, 
+please remember that each thread has its own stack. Thus, if you
+have a locally-allocated variable inside of some function a
+thread is executing, it is essentially private to that
+thread; no other thread can (easily) access it. To share
+data between threads, the values must be in the heap or
+otherwise some locale that is globally accessible.
+
+• Always use condition variables to signal between threads.
+While it is often tempting to use a simple flag, don’t do it.
+
+• Use the manual pages. On Linux, in particular, 
+the pthread man pages are highly informative and discuss
+much of the nuances presented here, often in even more detail.
+Read them carefully!

@@ -1,0 +1,49 @@
+How to add locks to a structure ?
+How to make it efficient ?
+
+* Concurrent counters
+
+** Definition
+
+Simple structure with functions to increment, decrement, etc ...
+Made thread safe by adding lock around each of the operations
+inside the functions.
+
+** Scalable counters
+
+Not scalable with number of threads -> enter *approximate counters*
+One logical counter is represented by several physical counters.
+The *global* counter is updated every time a local counter reaches
+a threshold /S/.
+
+* Concurrent linked lists
+
+** Definition
+
+Same as linked list with operations wrapped in locks (a bit different
+for lookup).
+
+** Scalable linked lists
+
+**Lock coupling** - one lock per node of the list.
+They successively get acquired and released upon traversal ->
+theoretically good but expensive in practice.
+
+* Concurrent queues
+
+** Definition
+
+One lock for head, one for tail.
+Enqueue uses tail lock and dequeue uses head lock.
+
+next chapter spends more time on efficiently implemeting
+thread-safe queues.
+
+* Concurrent hash tables
+
+Uses the concurrent list functions for each of its buckets.
+Very high performance and scalability.
+
+* Knuth's law - applied to locks
+
+*Always start with a single big lock*, and then optimize if needed

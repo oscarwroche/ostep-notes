@@ -1,0 +1,117 @@
+* Basic locks
+
+Exactly one thread holds a lock at one given time.
+
+The /lock/ instruction will return only if anotehr thread isn't holding the lock
+
+Locks allow to put some of the scheduling activity back on the side
+of the programmer.
+
+* /Pthread/ locks
+
+A lock is called a /mutex/ in the POSIX library - which stands for
+mutual exclusion
+
+* Building a lock
+
+How to build an efficient lock ? What hardware / OS support are needed ?
+
+* How to evaluate a lock ?
+
+Criteria :
+
+1. *mutual exclusion*
+   + are sections of code actually isolated ?
+2. *fairness*
+   + can all locks acquire the lock once it's free ?
+3. *performance*
+   + what is the time overhead associated with using
+     the lock ?
+   + how well does the lock work with multiple CPUs ?
+
+* How to control interrupts ?
+
+Problems with locks / interrupts :
+
+1. Locks allow any thread to perform a privileged operation, turning locks on or off.
+2. Doesn't work with multiple CPUs
+3. Interrupt loss
+4. Performance (slow on CPUs)
+
+* Failed solution : using loads / stores
+
+First idea: using a flag property of the lock to tell whether it's
+in use or not. Another thread that tries to access the lock will just
+spin until it's freed.
+
+Two problems :
+
+1. Correctness
+   + Two threads can acquire lock at the same time
+     (interrupt after spin)
+2. Performance
+   + Spin-waiting has poor performance
+
+Can be improved by using turns - see Peterson's algorithm, but is complex
+and doesn't work with modern memory inconsistency issues.
+
+* Working solution: *test-and-set*
+
+The idea is to have a *test-and-set* /  *atomic exchange* instruction to store 
+a new value for a pointer - in the hardware.
+
+A spin lock using this instruction in the /while/ loop will ensure correctness.
+
+* Evaluation of spin locks
+
+
+1. *mutual exclusion*
+   + yes
+2. *fairness*
+   + not necessarily with a simple spin
+     starvation is possible
+3. *performance*
+   +  bad on one cpu : time slices wasted spinning
+      in the middle of a critical section
+   +  better on several cpus
+
+* Other methods :
+** Compare-and-swap
+** Load-linked / store-conditional
+
+Use load that stores value at pointer and a conditional store that looks
+whether said value has been updated before storing -> this allows to have
+a safeguard in case the pointer has been updated between load and store
+
+** Fetch and add + ticket lock
+
+Allows to have mutual exclusion as well as a kind of scheduling
+that ensures all thread will eventually have a chance to acquire the lock.
+
+* How not to waste time spinning ?
+
+If a critical section is interrupted, other threads will get CPU
+time only to spin (because they're not acquiring the lock until
+the critical section is done).
+
+Other problem with spinning is *priority inversion*
+
+** Yield !
+
+Example with test-and-set: use system call /yield/ instead
+of doing nothing in /while/ loop.
+
+Works well in simple cases but with lots of threads, still
+faces performance (context-switching) and starvation issues.
+
+** Using queues
+
+The problem is that too much is left to the scheduler, which
+doesn't know about the specifics of the threads.
+
+Solaris uses /park/ and /unpark(id)/ to put calling thread to
+sleep and wake thread with threadId /id/.
+
+Linux uses a /futex/ structure with the /futex_wait(address, expected)/
+and /futex_wake(address)/ calls. See /lowlevellock.h/ in /nptl/ library
+of[[https://ftp.gnu.org/gnu/glibc/][ *GNU's libc*]]. This is an example of a *two-phase lock*.
